@@ -175,6 +175,8 @@ Na entrada simplificada, campos não informados são imputados pelo pipeline. Ag
 
 ## 9. Como subir
 
+Certifique-se de baixar a base do kaggle (https://www.kaggle.com/competitions/home-credit-default-risk/data?select=installments_payments.csv) e adicione [application_train.csv; bureau.csv; installments_payments.csv; previous_application.csv] dentro da pasta Landing.
+
 Na raiz do projeto:
 
 ```powershell
