@@ -10,3 +10,9 @@ Model/*.json
 reports/*
 !reports/.gitkeep
 .ipynb_checkpoints/
+Landing/application_train.csv
+Landing/bureau.csv
+Landing/previous_application.csv
+Landing/installments_payments.csv
+Landing/application_train.csv
+Landing/bureau.csv
