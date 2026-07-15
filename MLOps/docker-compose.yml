@@ -1,0 +1,77 @@
+name: home-credit-empresarios-v143
+x-common-env: &common-env
+  PROJECT_ROOT: /opt/project
+  PYTHONPATH: /opt/project
+  STORAGE_BACKEND: minio
+  MIRROR_LOCAL_OUTPUTS: "true"
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_ACCESS_KEY: minioadmin
+  MINIO_SECRET_KEY: minioadmin123
+  MINIO_BUCKET: home-credit-empresarios
+  FILTER_SMALL_BUSINESS: "true"
+  MODEL_CV_FOLDS: "5"
+  MODEL_SEARCH_SAMPLE_FRAC: "0.30"
+  MODEL_TEST_SIZE: "0.20"
+  MODEL_ANALYSIS_THRESHOLDS: "0.30,0.50,0.70"
+  RISK_THRESHOLD: "0.50"
+  ENABLE_SHAP: "true"
+  SHAP_SAMPLE_ROWS: "500"
+  PERMUTATION_SAMPLE_ROWS: "5000"
+  PERMUTATION_REPEATS: "3"
+  MAX_ROWS_APPLICATION: "0"
+  MAX_ROWS_BUREAU: "0"
+  MAX_ROWS_PREVIOUS: "0"
+  MAX_ROWS_INSTALLMENTS: "0"
+  INSTALLMENTS_CHUNKSIZE: "500000"
+services:
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports: ["9000:9000","9001:9001"]
+    volumes: ["minio-data:/data"]
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "until mc alias set local http://minio:9000 minioadmin minioadmin123; do
+      echo 'Aguardando MinIO...'; sleep 2; done;
+      mc mb -p local/home-credit-empresarios || true; echo 'Bucket pronto.'"
+  airflow:
+    build:
+      context: ..
+      dockerfile: MLOps/Dockerfile.airflow
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *common-env
+      AIRFLOW_HOME: /opt/airflow
+      AIRFLOW_ADMIN_USER: airflow
+      AIRFLOW_ADMIN_PASSWORD: airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/project/MLOps/dags
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    ports: ["8080:8080"]
+    volumes: ["..:/opt/project","airflow-home:/opt/airflow"]
+    command: ["bash","/opt/project/MLOps/start_airflow.sh"]
+  streamlit:
+    build:
+      context: ..
+      dockerfile: MLOps/Dockerfile.app
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *common-env
+    ports: ["8501:8501"]
+    volumes: ["..:/opt/project"]
+    command: ["streamlit","run","/opt/project/app/app.py","--server.address=0.0.0.0","--server.port=8501"]
+volumes:
+  minio-data:
+  airflow-home:

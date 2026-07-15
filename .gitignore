@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+Landing/*.csv
+Dados/*.csv
+Dados/_processing/*
+!Dados/_processing/.gitkeep
+Model/*.pkl
+Model/*.json
+reports/*
+!reports/.gitkeep
+.ipynb_checkpoints/
